@@ -9,6 +9,19 @@ A virtual environment is recommended, but not required.
 pip install -e .
 `
 
+## Features
+
+- Dynamic selection of shaders using OpenGL framebuffer.
+
+Shaders include:
+- Edge Detection (Sobel)
+- RGB Inversion
+- Colorize (Redshift)
+- Color Shift
+- Brightness threshold
+- Gaussian Blur
+- Blue Noise Dithering
+
 # Credits
 Blue noise texture source: https://github.com/Calinou/free-blue-noise-textures
 
