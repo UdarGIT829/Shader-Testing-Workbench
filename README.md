@@ -22,6 +22,9 @@ Shaders include:
 - Gaussian Blur
 - Blue Noise Dithering
 
+You can stack shaders in different orders (improved controls coming soon)
+![Demo Preview](demo.gif)
+
 # Credits
 Blue noise texture source: https://github.com/Calinou/free-blue-noise-textures
 
