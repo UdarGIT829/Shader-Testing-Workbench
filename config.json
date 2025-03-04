@@ -4,7 +4,9 @@
         "parameters":{
             "edgeScale":{
                 "default_v":1.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Edge Scale",
+                "range":[0.0,10.0]
             }
         },
         "otherParameters":{
@@ -12,26 +14,34 @@
                 "default_v":1.0,
                 "type":"float"
             }
-        }
+        },
+        "display_format":"{index}: Sobel (edgeScale={edgeScale:.2f})"
     },
     "Inversion":{
         "filename":"inversion.frag",
-        "parameters":{}
+        "parameters":{},
+        "display_format":"{index}: Inversion (no params)"
     },
     "GaussianBlur":{
         "filename":"gaussian.frag",
         "parameters":{
             "kernelSize":{
                 "default_v":3,
-                "type":"int"
+                "type":"int",
+                "gui_text":"Kernel Size",
+                "range":[1,21]
             },
             "sigma":{
                 "default_v":1.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Sigma",
+                "range":[0.1,100.0]
             },
             "randomSeed":{
                 "default_v":0,
-                "type":"int"
+                "type":"int",
+                "gui_text":"Random Seed",
+                "range":[0,999999]
             }
         },
         "otherParameters":{
@@ -39,57 +49,79 @@
                 "default_v":1.0,
                 "type":"float"
             }
-        }
+        },
+        "display_format":"{index}: GaussianBlur (kSize={kernelSize}, sigma={sigma:.2f}, seed={randomSeed})"
     },
     "Redshift":{
         "filename":"redshift.frag",
         "parameters":{
             "redFactor":{
                 "default_v":1.5,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Red Factor",
+                "range":[0.0,3.0]
             },
             "greenFactor":{
                 "default_v":0.8,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Green Factor",
+                "range":[0.0,3.0]
             },
             "blueFactor":{
                 "default_v":0.8,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Blue Factor",
+                "range":[0.0,3.0]
             }
-        }
+        },
+        "display_format":"{index}: Redshift (R={redFactor:.2f}, G={greenFactor:.2f}, B={blueFactor:.2f})"
     },
     "ColorShift":{
         "filename":"color_shift.frag",
         "parameters":{
             "hueShiftDeg":{
                 "default_v":0.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Hue Shift (deg)",
+                "range":[0.0,360.0]
             },
             "satScale":{
                 "default_v":1.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Saturation Scale",
+                "range":[0.0,2.0]
             },
             "valScale":{
                 "default_v":1.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Value Scale",
+                "range":[0.0,2.0]
             }
-        }
+        },
+        "display_format":"{index}: ColorShift (Hue={hueShiftDeg:.1f}°, Sat={satScale:.2f}, Val={valScale:.2f})"
     },
     "BrightnessThreshold":{
         "filename":"brightness_threshold.frag",
         "parameters":{
             "threshold":{
                 "default_v":0.5,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Threshold",
+                "range":[0.0,2.0]
             },
             "useGreater":{
                 "default_v":true,
-                "type":"bool"
+                "type":"bool",
+                "gui_text":"Use Greater Than?",
+                "range":[true,false]
             },
             "setValue":{
                 "default_v":0.0,
-                "type":"float"
+                "type":"float",
+                "gui_text":"Replacement Brightness",
+                "range":[0.0,1.0]
             }
-        }
+        },
+        "display_format": "{index}: BrightnessThreshold (lum {comparison} {threshold:.2f} ? keep : {setValue:.2f})"
     }
 }

@@ -89,6 +89,9 @@ class shaderViewer:
         effect_programs.update( {
             "BluenoiseDither": bluenoise_program,
         } )
+
+        self.CONFIG["BluenoiseDither"] = {}
+
         # ------------------- Fullscreen Quad Setup -------------------
         quad_vertices = np.array([
             # positions   # texCoords
@@ -203,17 +206,18 @@ class shaderViewer:
                     if loc_ts != -1:
                         glUniform2f(loc_ts, 1.0/width, 1.0/height)
                 if effect_type == iterShaderEffect:
-                    for iterParam,paramData in iterShaderParameters.items():
-                        loc_var = glGetUniformLocation(program, iterParam)
-                        if loc_var != -1:
-                            if paramData["type"] == "float":
-                                glUniform1f(loc_var, params.get(iterParam, paramData.get("default_v")))
-                            elif paramData["type"] == "int":
-                                glUniform1i(loc_var, params.get(iterParam, paramData.get("default_v")))
-                            elif paramData["type"] == "bool":
-                                _val = params.get(iterParam, paramData.get("default_v"))
-                                _val = 1 if _val else 0
-                                glUniform1i(loc_var, _val)
+                    if iterShaderParameters:
+                        for iterParam,paramData in iterShaderParameters.items():
+                            loc_var = glGetUniformLocation(program, iterParam)
+                            if loc_var != -1:
+                                if paramData["type"] == "float":
+                                    glUniform1f(loc_var, params.get(iterParam, paramData.get("default_v")))
+                                elif paramData["type"] == "int":
+                                    glUniform1i(loc_var, params.get(iterParam, paramData.get("default_v")))
+                                elif paramData["type"] == "bool":
+                                    _val = params.get(iterParam, paramData.get("default_v"))
+                                    _val = 1 if _val else 0
+                                    glUniform1i(loc_var, _val)
 
 
 
@@ -259,35 +263,20 @@ class shaderViewer:
 
         # ------------------- ImGui Popup State -------------------
         show_add_effect_popup = False
-        effect_types = [
-            "Sobel",
-            "Inversion",
-            "Redshift",
-            "ColorShift",
-            "GaussianBlur",
-            "BrightnessThreshold",
-            "BluenoiseDither"
-        ]
+
+        effect_types = list(self.CONFIG.keys())
+
         selected_effect_idx = 0
 
-        # Temporary parameters for each effect
-        temp_sobel_scale = 1.0
+        temp_shader_vars = {}
+        # Create temporary variables based on list
+        for iterShaderEffect, _ in self.CONFIG.items():
+            iterShaderParameters = _.get("parameters")
+            temp_shader_vars[iterShaderEffect] = {}
+            if iterShaderParameters:
+                for iterParam,iterParamData in iterShaderParameters.items():
+                    temp_shader_vars[iterShaderEffect][iterParam] = iterParamData["default_v"]
 
-        temp_red_factor   = 1.5
-        temp_green_factor = 0.8
-        temp_blue_factor  = 0.8
-
-        temp_gauss_kernel = 3
-        temp_gauss_sigma  = 1.0
-        temp_gauss_seed   = 0
-
-        temp_threshold = 0.5
-        temp_use_greater = True  # default to "greater than threshold"
-        temp_set_value = 0.0     # color brightness if not passing threshold
-
-        temp_hue_shift  = 0.0  # degrees, 0..360
-        temp_sat_scale  = 1.0  # 0..2
-        temp_val_scale  = 1.0  # 0..2
 
         target_frame_time = 1.0 / 30.0  # target frame duration (33.33 ms)
 
@@ -378,105 +367,30 @@ class shaderViewer:
                         selected_effect_idx,
                         effect_types
                     )
+
+
                     effect_type = effect_types[selected_effect_idx]
 
                     # 2) Show relevant parameters
-                    if effect_type == "Sobel":
-                        _, temp_sobel_scale = imgui.slider_float("Edge Scale", temp_sobel_scale, 0.0, 10.0, "%.2f")
-
-                    elif effect_type == "Redshift":
-                        _, temp_red_factor   = imgui.slider_float("Red Factor",   temp_red_factor,   0.0, 3.0, "%.2f")
-                        _, temp_green_factor = imgui.slider_float("Green Factor", temp_green_factor, 0.0, 3.0, "%.2f")
-                        _, temp_blue_factor  = imgui.slider_float("Blue Factor",  temp_blue_factor,  0.0, 3.0, "%.2f")
-
-                    elif effect_type == "ColorShift":
-                        # Hue shift in degrees, e.g. 0..360
-                        _, temp_hue_shift = imgui.slider_float("Hue Shift (deg)", temp_hue_shift, 0.0, 360.0, "%.1f")
-                        # Saturation scale
-                        _, temp_sat_scale = imgui.slider_float("Sat Scale", temp_sat_scale, 0.0, 2.0, "%.2f")
-                        # Value scale
-                        _, temp_val_scale = imgui.slider_float("Val Scale", temp_val_scale, 0.0, 2.0, "%.2f")
-
-                    elif effect_type == "GaussianBlur":
-                        # kernelSize usually an odd integer
-                        changed, temp_gauss_kernel = imgui.slider_int("Kernel Size", temp_gauss_kernel, 1, 21)
-                        # ensure it remains odd if you like:
-                        if temp_gauss_kernel % 2 == 0:
-                            temp_gauss_kernel += 1
-                        _, temp_gauss_sigma  = imgui.slider_float("Sigma", temp_gauss_sigma, 0.1, 100.0, "%.2f")
-                        _, temp_gauss_seed   = imgui.input_int("Random Seed", temp_gauss_seed)
-                    
-                    # Inversion has no parameters
-
-                    elif effect_type == "BrightnessThreshold":
-                        # Slider for the threshold (0 to 1?)
-                        _, temp_threshold = imgui.slider_float("Threshold", temp_threshold, 0.0, 1.0, "%.2f")
-                        
-                        # Checkbox for useGreater?
-                        _, temp_use_greater = imgui.checkbox("Use Greater Than?", temp_use_greater)
-                        
-                        # Slider/float for setValue
-                        _, temp_set_value = imgui.slider_float("Replacement Brightness", temp_set_value, 0.0, 1.0, "%.2f")
-
-
+                    selectedShaderEffect = self.CONFIG.get(effect_type)
+                    if selectedShaderEffect.get("parameters"):
+                        for iterParam,iterParamData in selectedShaderEffect["parameters"].items():
+                            if iterParamData.get("type") == "float":
+                                _, temp_shader_vars[effect_type][iterParam] = imgui.slider_float(iterParamData.get("gui_text"), temp_shader_vars[effect_type][iterParam], iterParamData["range"][0], iterParamData["range"][1], "%.2f")  
+                            elif iterParamData.get("type") == "int":
+                                _, temp_shader_vars[effect_type][iterParam]  = imgui.slider_int(iterParamData.get("gui_text"), temp_shader_vars[effect_type][iterParam], iterParamData["range"][0], iterParamData["range"][1])
+                            elif iterParamData.get("type") == "bool":
+                                _, temp_shader_vars[effect_type][iterParam] = imgui.checkbox(iterParamData.get("gui_text"), temp_shader_vars[effect_type][iterParam])
 
                     # 3) Confirm / Cancel
                     if imgui.button("Confirm"):
-                        # Build new effect
-                        if effect_type == "Sobel":
-                            new_effect = {
-                                "type": "Sobel",
-                                "params": {
-                                    "edgeScale": temp_sobel_scale
-                                }
-                            }
-                        elif effect_type == "Redshift":
-                            new_effect = {
-                                "type": "Redshift",
-                                "params": {
-                                    "redFactor":   temp_red_factor,
-                                    "greenFactor": temp_green_factor,
-                                    "blueFactor":  temp_blue_factor
-                                }
-                            }
-                        elif effect_type == "ColorShift":
-                            new_effect = {
-                                "type": "ColorShift",
-                                "params": {
-                                    "hueShiftDeg": temp_hue_shift,
-                                    "satScale":    temp_sat_scale,
-                                    "valScale":    temp_val_scale
-                                }
-                            }
-                        elif effect_type == "GaussianBlur":
-                            new_effect = {
-                                "type": "GaussianBlur",
-                                "params": {
-                                    "kernelSize": temp_gauss_kernel,
-                                    "sigma":      temp_gauss_sigma,
-                                    "randomSeed": temp_gauss_seed
-                                }
-                            }
-                        elif effect_type == "BrightnessThreshold":
-                            new_effect = {
-                                "type": "BrightnessThreshold",
-                                "params": {
-                                    "threshold":   temp_threshold,
-                                    "useGreater":  temp_use_greater,
-                                    "setValue":    temp_set_value
-                                }
-                            }
-                        elif effect_type == "BluenoiseDither":
-                            new_effect = {
-                                "type": "BluenoiseDither",
-                                "params": {}
-                            }
-                        else:
-                            # Inversion
-                            new_effect = {
-                                "type": "Inversion",
-                                "params": {}
-                            }
+                        new_effect = {}
+                        new_effect["type"] = effect_type
+                        new_effect["params"] = {}
+
+                        if selectedShaderEffect.get("parameters"):
+                            for iterParam,iterParamData in selectedShaderEffect["parameters"].items(): 
+                                new_effect["params"][iterParam] = temp_shader_vars[effect_type][iterParam]
 
                         # Add to stack
                         shader_stack.append(new_effect)
@@ -498,42 +412,28 @@ class shaderViewer:
                 effect_type = effect["type"]
                 params = effect["params"]
 
-                # Summarize the parameters
-                if effect_type == "Sobel":
-                    scale = params.get("edgeScale", 1.0)
-                    imgui.text(f"{i}: Sobel (edgeScale={scale:.2f})")
-                elif effect_type == "Redshift":
-                    r = params.get("redFactor", 1.5)
-                    g = params.get("greenFactor", 0.8)
-                    b = params.get("blueFactor", 0.8)
-                    imgui.text(f"{i}: Redshift (R={r:.2f}, G={g:.2f}, B={b:.2f})")
-                elif effect_type == "ColorShift":
-                    h = params.get("hueShiftDeg", 0.0)
-                    s = params.get("satScale", 1.0)
-                    v = params.get("valScale", 1.0)
-                    imgui.text(f"{i}: ColorShift (Hue={h:.1f}°, Sat={s:.2f}, Val={v:.2f})")
-                elif effect_type == "GaussianBlur":
-                    ks = params.get("kernelSize", 3)
-                    sg = params.get("sigma", 1.0)
-                    sd = params.get("randomSeed", 0)
-                    imgui.text(f"{i}: GaussianBlur (kSize={ks}, sigma={sg:.2f}, seed={sd})")
-                elif effect_type == "BrightnessThreshold":
-                    thr = params.get("threshold", 0.5)
-                    use = params.get("useGreater", True)
-                    val = params.get("setValue", 0.0)
-                    comparison = ">" if use else "<"
-                    imgui.text(f"{i}: BrightnessThreshold (lum {comparison} {thr:.2f} ? keep : {val:.2f})")
-                elif effect_type == "BluenoiseDither":
-                    imgui.text(f"{i}: BluenoiseDither (no params)")
-                else:  # Inversion
-                    imgui.text(f"{i}: Inversion (no params)")
+                # Get format string from config
+                effect_config = self.CONFIG.get(effect_type, {})
+                display_format = effect_config.get("display_format", "{index}: " + effect_type)
 
+                # Prepare the parameters dynamically
+                param_values = {"index": i, **params}
+
+                # Special handling for BrightnessThreshold (boolean comparison)
+                if effect_type == "BrightnessThreshold":
+                    param_values["comparison"] = ">" if params.get("useGreater", True) else "<"
+
+                # Render the effect text using the format from config.json
+                try:
+                    imgui.text(display_format.format(**param_values))
+                except KeyError as e:
+                    imgui.text(f"{i}: {effect_type} (Error: Missing key {str(e)})")
 
                 imgui.same_line()
                 if imgui.button("Remove"):
                     shader_stack.pop(i)
                 imgui.pop_id()
-
+                
             imgui.end()
             imgui.render()
             impl.render(imgui.get_draw_data())
